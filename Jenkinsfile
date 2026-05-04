@@ -4,17 +4,16 @@ pipeline {
     stages {
 
         stage("Semgrep Scan") {
+            agent {
+                docker {
+                    image 'python:3.11'
+                    args '-u root'   // ensures permissions
+                }
+            }
             steps {
                 withCredentials([string(credentialsId: 'semgrep-token', variable: 'SEMGREP_APP_TOKEN')]) {
                     sh '''
-                        # Create virtual environment (fix PEP 668 issue)
-                        python3 -m venv venv
-                        . venv/bin/activate
-
-                        # Install semgrep safely
                         pip install --quiet semgrep
-
-                        # Run scan
                         semgrep ci
                     '''
                 }
@@ -48,7 +47,7 @@ pipeline {
         stage("Deploy") {
             steps {
                 sh '''
-                    docker-compose down
+                    docker-compose down || true
                     docker-compose up -d
                 '''
             }
